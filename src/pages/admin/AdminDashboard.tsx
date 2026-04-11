@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import PortalLayout from "@/components/PortalLayout";
 import StatCard from "@/components/StatCard";
 import { LayoutDashboard, Users, UserCheck, Package, ShoppingCart, Warehouse, Settings } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 interface Inquiry {
   id: string;
@@ -12,7 +11,6 @@ interface Inquiry {
   contact: string;
   message: string;
   status: 'new' | 'read' | 'replied';
-  created_at: string;
 }
 
 interface PendingProduct {
@@ -20,8 +18,19 @@ interface PendingProduct {
   name: string;
   category: string;
   price_range: string;
-  created_at: string;
 }
+
+const MOCK_INQUIRIES: Inquiry[] = [
+  { id: 'IQ01', buyer_name: 'Wei Zhang', company: 'Shanghai Sport Trade Co.', contact: 'weizhang_sport', message: 'Interested in bulk order of Beta AR Jacket, 300 units M/L. Please send quote.', status: 'new' },
+  { id: 'IQ02', buyer_name: 'Min-jun Lee', company: 'Seoul Active Wear', contact: 'seoulactive@kr.com', message: 'Can you confirm availability of Atom LT Hoody for Q3?', status: 'read' },
+  { id: 'IQ03', buyer_name: 'Arun Tanaka', company: 'Tokyo Outdoor Ltd.', contact: 'tokyo_outd', message: 'Following up on Alpha SV pre-order pricing for 100 units.', status: 'replied' },
+];
+
+const MOCK_PENDING: PendingProduct[] = [
+  { id: 'PP01', name: 'Norrøna Falketind Jacket', category: 'Jackets', price_range: '$180–$210' },
+  { id: 'PP02', name: 'Bergans Trollveggen Fleece', category: 'Fleece', price_range: '$90–$120' },
+  { id: 'PP03', name: 'Helly Hansen Odin Softshell', category: 'Softshell', price_range: '$140–$160' },
+];
 
 const navItems = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -43,29 +52,15 @@ const statusColors: Record<string, string> = {
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
-  const [pendingProducts, setPendingProducts] = useState<PendingProduct[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [inquiries, setInquiries] = useState<Inquiry[]>(MOCK_INQUIRIES);
+  const [pendingProducts, setPendingProducts] = useState<PendingProduct[]>(MOCK_PENDING);
+  const loading = false;
 
-  const fetchData = async () => {
-    const [{ data: inqData }, { data: prodData }] = await Promise.all([
-      supabase.from('inquiries').select('*').order('created_at', { ascending: false }),
-      supabase.from('products').select('id, name, category, price_range, created_at').eq('status', 'pending').order('created_at', { ascending: false }),
-    ]);
-    setInquiries(inqData ?? []);
-    setPendingProducts(prodData ?? []);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, []);
-
-  const updateInquiryStatus = async (id: string, status: 'read' | 'replied') => {
-    await supabase.from('inquiries').update({ status }).eq('id', id);
+  const updateInquiryStatus = (id: string, status: 'read' | 'replied') => {
     setInquiries(prev => prev.map(i => i.id === id ? { ...i, status } : i));
   };
 
-  const approveProduct = async (id: string) => {
-    await supabase.from('products').update({ status: 'active' }).eq('id', id);
+  const approveProduct = (id: string) => {
     setPendingProducts(prev => prev.filter(p => p.id !== id));
   };
 

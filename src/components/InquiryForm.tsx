@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { supabase } from "@/lib/supabase";
 
 interface FormState {
   buyer_name: string;
@@ -22,20 +21,15 @@ const InquiryForm = () => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
-
-    const { error } = await supabase.from('inquiries').insert([form]);
-
-    if (error) {
-      setError(error.message);
-    } else {
+    setTimeout(() => {
       setSuccess(true);
       setForm(empty);
-    }
-    setSubmitting(false);
+      setSubmitting(false);
+    }, 600);
   };
 
   if (success) {

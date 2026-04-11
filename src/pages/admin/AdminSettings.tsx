@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import PortalLayout from "@/components/PortalLayout";
 import { LayoutDashboard, Users, UserCheck, Package, ShoppingCart, Warehouse, Settings, UserPlus } from "lucide-react";
 import { adminTeam } from "@/lib/data/admin";
-import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -36,23 +35,15 @@ const AdminSettings = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
     setStatus('loading');
     setErrorMsg('');
-
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({ email, role });
-
-    if (error) {
-      setStatus('error');
-      setErrorMsg(error.message);
-    } else {
+    setTimeout(() => {
       setStatus('success');
       setEmail('');
       setRole(INVITE_ROLES[0]);
-    }
+    }, 600);
   };
 
   return (

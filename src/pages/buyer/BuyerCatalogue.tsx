@@ -1,20 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PortalLayout from "@/components/PortalLayout";
 import StatusBadge from "@/components/StatusBadge";
 import { LayoutDashboard, BookOpen, FileText, ShoppingCart, User, Search } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-
-interface Product {
-  id: string;
-  name: string;
-  brand: string;
-  category: string;
-  sizes: string[];
-  availability: 'in-stock' | 'pre-order' | 'limited';
-  price_range: string;
-}
+import { buyerCatalogue } from "@/lib/data/buyer";
 
 const navItems = [
   { label: 'Dashboard', path: '/buyer/dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -26,35 +16,19 @@ const navItems = [
 
 const BuyerCatalogue = () => {
   const { t } = useTranslation();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [brandFilter, setBrandFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      const { data, error } = await supabase.from('products').select('*').eq('status', 'active');
-      if (error) {
-        setError(error.message);
-      } else {
-        setProducts(data ?? []);
-      }
-      setLoading(false);
-    };
-    fetchProducts();
-  }, []);
-
-  const filtered = products.filter(p => {
+  const filtered = buyerCatalogue.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.brand.toLowerCase().includes(search.toLowerCase());
     const matchBrand = !brandFilter || p.brand === brandFilter;
     const matchCategory = !categoryFilter || p.category === categoryFilter;
     return matchSearch && matchBrand && matchCategory;
   });
 
-  const categories = [...new Set(products.map(p => p.category))];
-  const brands = [...new Set(products.map(p => p.brand))];
+  const categories = [...new Set(buyerCatalogue.map(p => p.category))];
+  const brands = [...new Set(buyerCatalogue.map(p => p.brand))];
 
   return (
     <PortalLayout navItems={navItems} portalName="Buyer Portal">
@@ -92,58 +66,35 @@ const BuyerCatalogue = () => {
           </select>
         </div>
 
-        {loading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-card rounded-xl border border-border overflow-hidden animate-pulse">
-                <div className="h-40 bg-surface-elevated" />
-                <div className="p-4 space-y-3">
-                  <div className="h-4 bg-surface-elevated rounded w-3/4" />
-                  <div className="h-3 bg-surface-elevated rounded w-1/2" />
-                  <div className="h-8 bg-surface-elevated rounded" />
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((p) => (
+            <div key={p.id} className="bg-card rounded-xl border border-border overflow-hidden hover:-translate-y-px hover:border-border/80 transition-all duration-150 group">
+              <div className="h-40 bg-surface-elevated flex items-center justify-center">
+                <span className="text-muted-foreground text-xs">{t('product_image')}</span>
               </div>
-            ))}
-          </div>
-        )}
-
-        {error && (
-          <div className="rounded-xl border border-status-red/30 bg-status-red/10 p-4 text-sm text-status-red">
-            {t('failed_load_products')} {error}
-          </div>
-        )}
-
-        {!loading && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((p) => (
-              <div key={p.id} className="bg-card rounded-xl border border-border overflow-hidden hover:-translate-y-px hover:border-border/80 transition-all duration-150 group">
-                <div className="h-40 bg-surface-elevated flex items-center justify-center">
-                  <span className="text-muted-foreground text-xs">{t('product_image')}</span>
+              <div className="p-4 space-y-3">
+                <div>
+                  <h3 className="font-semibold text-foreground">{p.name}</h3>
+                  <p className="text-sm text-muted-foreground">{p.brand}</p>
                 </div>
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{p.name}</h3>
-                    <p className="text-sm text-muted-foreground">{p.brand}</p>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{t('sizes')}: {p.sizes.join(', ')}</span>
-                    <StatusBadge status={p.availability} />
-                  </div>
-                  <p className="text-sm font-semibold text-foreground">{p.price_range}</p>
-                  <Link
-                    to="/buyer/quotes/new"
-                    className="block w-full py-2 bg-accent text-accent-foreground font-medium rounded-lg text-center text-sm hover:brightness-110 transition-all duration-150"
-                  >
-                    {t('request_quote')}
-                  </Link>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{t('sizes')}: {p.sizes.join(', ')}</span>
+                  <StatusBadge status={p.availability} />
                 </div>
+                <p className="text-sm font-semibold text-foreground">{p.priceRange}</p>
+                <Link
+                  to="/buyer/quotes/new"
+                  className="block w-full py-2 bg-accent text-accent-foreground font-medium rounded-lg text-center text-sm hover:brightness-110 transition-all duration-150"
+                >
+                  {t('request_quote')}
+                </Link>
               </div>
-            ))}
-            {filtered.length === 0 && (
-              <p className="col-span-full text-center text-sm text-muted-foreground py-12">{t('no_products_match')}</p>
-            )}
-          </div>
-        )}
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <p className="col-span-full text-center text-sm text-muted-foreground py-12">{t('no_products_match')}</p>
+          )}
+        </div>
       </div>
     </PortalLayout>
   );
